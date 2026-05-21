@@ -1,18 +1,18 @@
 import '@testing-library/jest-dom';
+import { beforeEach, vi } from 'vitest';
 
-// Mock idb-keyval (IndexedDB) — not available in jsdom
-vi.mock('idb-keyval', () => {
-  const store = new Map<string, any>();
-  return {
-    get: vi.fn((key: string) => Promise.resolve(store.get(key))),
-    set: vi.fn((key: string, value: any) => { store.set(key, value); return Promise.resolve(); }),
-    del: vi.fn((key: string) => { store.delete(key); return Promise.resolve(); }),
-    keys: vi.fn(() => Promise.resolve([...store.keys()])),
-    clear: vi.fn(() => { store.clear(); return Promise.resolve(); }),
-  };
-});
+// Hoisted shared store so we can clear it between every test for full isolation.
+const { idbStore } = vi.hoisted(() => ({ idbStore: new Map<string, unknown>() }));
 
-// Provide a minimal localStorage mock
+vi.mock('idb-keyval', () => ({
+  get: vi.fn((key: string) => Promise.resolve(idbStore.get(key))),
+  set: vi.fn((key: string, value: unknown) => { idbStore.set(key, value); return Promise.resolve(); }),
+  del: vi.fn((key: string) => { idbStore.delete(key); return Promise.resolve(); }),
+  keys: vi.fn(() => Promise.resolve([...idbStore.keys()])),
+  clear: vi.fn(() => { idbStore.clear(); return Promise.resolve(); }),
+}));
+
+// Minimal localStorage mock for jsdom
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
@@ -22,5 +22,11 @@ const localStorageMock = (() => {
     clear: () => { store = {}; },
   };
 })();
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, configurable: true });
 
-Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
+// Test isolation: reset all mock state + persistence between every test
+beforeEach(() => {
+  idbStore.clear();
+  localStorageMock.clear();
+  vi.clearAllMocks();
+});
