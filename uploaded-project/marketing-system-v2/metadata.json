@@ -1,8 +1,0 @@
-{
-  "name": "MIS — Marketing Intelligence System",
-  "description": "A sequential marketing pipeline for building company positioning and offers step-by-step.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}
