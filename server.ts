@@ -357,7 +357,7 @@ async function startServer() {
         if (fallbackToGemini || !text) {
           req.headers['x-neural-trace'] = traceId;
           const result = await callGemini('generate', { systemPrompt, userMessage, jsonResponse }, req);
-          text = result.text;
+          text = ('text' in result ? result.text : "") ?? "";
         }
 
         if (text) aiCache.set(cacheKey, { response: text, timestamp: Date.now() });

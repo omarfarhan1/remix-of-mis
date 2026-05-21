@@ -70,8 +70,8 @@ export const AIGeneratedAvatarWizard: React.FC<AvatarWizardProps> = ({
   const [industryIntel, setIndustryIntel] = React.useState<any>(null);
 
   React.useEffect(() => {
-    StorageManager.load(STORAGE_KEYS.INDUSTRY_INTELLIGENCE, {}).then((allIntel) => {
-      setIndustryIntel(allIntel[company.industry] || null);
+    StorageManager.load<Record<string, unknown>>(STORAGE_KEYS.INDUSTRY_INTELLIGENCE, {}).then((allIntel) => {
+      setIndustryIntel(allIntel[company.industry] ?? null);
     });
   }, [company.industry]);
 
