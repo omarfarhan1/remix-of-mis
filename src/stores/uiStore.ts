@@ -64,8 +64,6 @@ interface UIState {
   dismissError: () => void;
 }
 
-let successToastTimer: ReturnType<typeof setTimeout> | null = null;
-
 export const useUIStore = create<UIState>((set, get) => ({
   theme: readInitialTheme(),
   setTheme: (theme) => {
@@ -97,22 +95,9 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   successToast: null,
   errorToast: null,
-  showSuccess: (msg, ttlMs = 3000) => {
-    if (successToastTimer) clearTimeout(successToastTimer);
-    set({ successToast: msg });
-    successToastTimer = setTimeout(() => {
-      set({ successToast: null });
-      successToastTimer = null;
-    }, ttlMs);
-  },
+  showSuccess: (msg) => set({ successToast: msg }),
   showError: (msg) => set({ errorToast: msg }),
-  dismissSuccess: () => {
-    if (successToastTimer) {
-      clearTimeout(successToastTimer);
-      successToastTimer = null;
-    }
-    set({ successToast: null });
-  },
+  dismissSuccess: () => set({ successToast: null }),
   dismissError: () => set({ errorToast: null }),
 }));
 
