@@ -13,8 +13,11 @@ dotenv.config();
 
 // --- STARTUP VALIDATION ---
 if (!process.env.GEMINI_API_KEY) {
-  console.error("\n[FATAL] GEMINI_API_KEY is not set. Please create a .env file based on .env.example.\n");
-  process.exit(1);
+  if (process.env.NODE_ENV === "production") {
+    console.error("\n[FATAL] GEMINI_API_KEY is not set in production.\n");
+    process.exit(1);
+  }
+  console.warn("\n[WARN] GEMINI_API_KEY is not set. AI endpoints will return 503; UI preview will still load.\n");
 }
 // --- TYPE DEFINITIONS ---
 interface CachedItem {
