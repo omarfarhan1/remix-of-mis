@@ -49,6 +49,13 @@ import {
   useToasts,
   useToastActions,
 } from './stores/uiStore';
+import {
+  useCompanies,
+  useActiveCompanyId,
+  useDraftCompany,
+  useNeedsOfferUpdate,
+  useCompanyActions,
+} from './stores/companyStore';
 
 export default function App() {
   // UI State (theme, modals, toasts, hub) lives in uiStore.
@@ -62,9 +69,23 @@ export default function App() {
   const { successToast: showSuccessToast, errorToast: showErrorToast, dismissError, dismissSuccess } = useToasts();
   const { showSuccess: showSuccessToastMsg, showError: showErrorToastMsg } = useToastActions();
 
-  // Persistence State
-  const [companies, setCompanies] = React.useState<Company[]>([]);
-  const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
+  // Persistence State — companies / activeCompanyId / draftCompany / needsOfferUpdate
+  // live in companyStore (Step 4). Persistence is handled inside the store.
+  const companies = useCompanies();
+  const activeCompanyId = useActiveCompanyId();
+  const draftCompany = useDraftCompany();
+  const needsOfferUpdate = useNeedsOfferUpdate();
+  const {
+    setCompanies,
+    setActiveCompanyId,
+    setDraftCompany,
+    setNeedsOfferUpdate,
+    markNeedsOfferUpdate,
+    clearNeedsOfferUpdate,
+    hydrate: hydrateCompanyStore,
+  } = useCompanyActions();
+
+  // Offers / progress still managed locally — moves in Step 5.
   const [offers, setOffers] = React.useState<Record<string, Offer>>({});
   const [progress, setProgress] = React.useState<Record<string, Progress>>({});
 
@@ -93,34 +114,18 @@ export default function App() {
   const lastSynthesisTimestampRef = React.useRef<number>(0);
   const [transientResultOffer, setTransientResultOffer] = React.useState<string | null>(null);
 
-  const [draftCompany, setDraftCompany] = React.useState<Partial<Company>>({
-    name: '',
-    industry: '',
-    logoUrl: '',
-    specializations: [],
-    usp: '',
-    country: 'Global',
-    websiteUrl: '',
-    isGlobalMode: true
-  });
-
-  // Load from Storage (IndexedDB Migration)
+  // Load from Storage (IndexedDB Migration). Company-domain hydration is delegated
+  // to companyStore; offers/progress still load here until Step 5.
   React.useEffect(() => {
     const initStorage = async () => {
-      const [savedCompanies, savedOffers, savedProgress] = await Promise.all([
-        StorageManager.load(STORAGE_KEYS.COMPANIES, []),
+      const [{ companies: savedCompanies }, savedOffers, savedProgress] = await Promise.all([
+        hydrateCompanyStore(),
         StorageManager.load(STORAGE_KEYS.OFFERS, {}),
         StorageManager.load(STORAGE_KEYS.PROGRESS, {})
       ]);
 
-      const savedActiveId = localStorage.getItem(STORAGE_KEYS.ACTIVE_COMPANY);
-      const savedNeedsUpdate = await StorageManager.load(STORAGE_KEYS.NEEDS_OFFER_UPDATE, {});
-
-      setCompanies(savedCompanies);
       setOffers(savedOffers);
       setProgress(savedProgress);
-      if (savedActiveId) setActiveCompanyId(savedActiveId);
-      setNeedsOfferUpdate(savedNeedsUpdate);
 
       if (savedCompanies.length > 0 && currentView === 'welcome') {
         setCurrentView('returning');
@@ -130,7 +135,6 @@ export default function App() {
     initStorage();
   }, []);
 
-  const [needsOfferUpdate, setNeedsOfferUpdate] = React.useState<Record<string, boolean>>({});
   const [stageInsights, setStageInsights] = React.useState<Record<string, ActionableInsight[]>>({});
   const [isInsightsLoading, setIsInsightsLoading] = React.useState(false);
 
@@ -150,20 +154,7 @@ export default function App() {
     }
   };
 
-  // Sync to Storage (Debounced / Consistent Effects)
-  React.useEffect(() => {
-    if (companies.length > 0) StorageManager.save(STORAGE_KEYS.COMPANIES, companies);
-  }, [companies]);
-
-  React.useEffect(() => {
-    StorageManager.save(STORAGE_KEYS.NEEDS_OFFER_UPDATE, needsOfferUpdate);
-  }, [needsOfferUpdate]);
-
-  React.useEffect(() => {
-    if (activeCompanyId) localStorage.setItem(STORAGE_KEYS.ACTIVE_COMPANY, activeCompanyId);
-    else localStorage.removeItem(STORAGE_KEYS.ACTIVE_COMPANY);
-  }, [activeCompanyId]);
-
+  // Persistence for offers/progress remains here until Step 5 (offerStore).
   React.useEffect(() => {
     StorageManager.save(STORAGE_KEYS.OFFERS, offers);
   }, [offers]);
@@ -250,7 +241,7 @@ export default function App() {
             draftCompany.industry !== activeCompany.industry
         );
         if (coreChanged && progress[activeCompanyId]?.stage2Complete) {
-            setNeedsOfferUpdate(prev => ({ ...prev, [activeCompanyId]: true }));
+            markNeedsOfferUpdate(activeCompanyId);
         }
     }
 
