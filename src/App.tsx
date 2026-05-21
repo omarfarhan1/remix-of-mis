@@ -516,11 +516,7 @@ export default function App() {
 
       setOffers(prev => ({ ...prev, [targetComp.id]: scoredOffer }));
       setTransientResultOffer(resultText);
-      setNeedsOfferUpdate(prev => {
-        const next = { ...prev };
-        delete next[targetComp.id];
-        return next;
-      });
+      clearNeedsOfferUpdate(targetComp.id);
       setProgress(prev => ({
         ...prev,
         [targetComp.id]: { ...prev[targetComp.id], stage1Complete: true, stage2Complete: true }
