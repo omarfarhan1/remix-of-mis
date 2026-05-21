@@ -276,8 +276,8 @@ export default function App() {
       }));
       
       if (currentView === 'returning') {
-        setShowSuccessToast("Project duplicated successfully!");
-        setTimeout(() => setShowSuccessToast(null), 3000);
+        showSuccessToastMsg("Project duplicated successfully!");
+        setTimeout(() => dismissSuccess(), 3000);
       } else {
         // Deterministic Start: Pass the object directly to avoid stale state in handleStartSynthesis
         handleStartSynthesis('Identity', newCompany);
@@ -288,12 +288,12 @@ export default function App() {
       if (currentView === 'stage1') {
         handleStartSynthesis('Identity', newCompany);
       } else {
-        setShowSuccessToast("Project updated successfully!");
-        setTimeout(() => setShowSuccessToast(null), 3000);
+        showSuccessToastMsg("Project updated successfully!");
+        setTimeout(() => dismissSuccess(), 3000);
       }
     }
     
-    setShowConflictModal(false);
+    closeConflictModal();
   };
 
   const handleStartSynthesis = async (stage: string, overrideCompany?: Company, overrideOffer?: Offer, overrideAvatars?: Avatar[]) => {
@@ -362,11 +362,11 @@ export default function App() {
       const isOverloaded = errorMessage.includes('503') || err.status === 503;
       
       if (isQuota) {
-        setShowErrorToast("Intelligence quota reached. Please pause for 60 seconds before re-engaging.");
+        showErrorToastMsg("Intelligence quota reached. Please pause for 60 seconds before re-engaging.");
       } else if (isOverloaded) {
-        setShowErrorToast("Intelligence server is heavily loaded. Attempting automatic recovery...");
+        showErrorToastMsg("Intelligence server is heavily loaded. Attempting automatic recovery...");
       } else {
-        setShowErrorToast(`Strategy Analysis Interrupted: ${errorMessage}`);
+        showErrorToastMsg(`Strategy Analysis Interrupted: ${errorMessage}`);
       }
       
       if (lastSynthesisTimestampRef.current === requestTimestamp) {
@@ -396,8 +396,8 @@ export default function App() {
       setStageStep(6); // Result screen
     } else if (synthesisStage === 'Modeling') {
       setCurrentView('returning');
-      setShowSuccessToast("Customer Avatars saved to Intelligence Hub!");
-      setTimeout(() => setShowSuccessToast(null), 3500);
+      showSuccessToastMsg("Customer Avatars saved to Intelligence Hub!");
+      setTimeout(() => dismissSuccess(), 3500);
     }
     setSynthesisReport(null);
   };
@@ -545,9 +545,9 @@ export default function App() {
       console.error("Offer Generation Error:", err);
       // Handle rate limits and server busy
       if (err?.message?.includes('429') || err?.message?.includes('quota') || err?.message?.includes('limit')) {
-        setShowErrorToast("Model quota exceeded. Please wait a moment before trying again.");
+        showErrorToastMsg("Model quota exceeded. Please wait a moment before trying again.");
       } else if (err?.message?.includes('503')) {
-        setShowErrorToast("Intelligence server is overloaded. Retrying once...");
+        showErrorToastMsg("Intelligence server is overloaded. Retrying once...");
       }
       setGenerationError(err.message || "Failed to generate offer. Please try again.");
     } finally {
@@ -608,8 +608,8 @@ export default function App() {
         topAvatarDrilled: true
       }, comp);
       
-      setShowSuccessToast("Global offer improved using collective empathy intelligence!");
-      setTimeout(() => setShowSuccessToast(null), 4000);
+      showSuccessToastMsg("Global offer improved using collective empathy intelligence!");
+      setTimeout(() => dismissSuccess(), 4000);
     } catch (err: any) {
       console.error(err);
       alert("Failed to consolidate: " + (err.message || "Unknown error"));
@@ -746,11 +746,11 @@ export default function App() {
     if (company) {
         setActiveCompanyId(id);
         if (phase === 'company') {
-            setShowFormulaModal(false);
+            closeFormulaModal();
             setDraftCompany(company);
-            setShowCompanyModal(true);
+            openCompanyModal();
         } else if (phase === 'offer') {
-            setShowCompanyModal(false);
+            closeCompanyModal();
             const existingOffer = offers[id];
             if (existingOffer) {
                 setDraftOffer(existingOffer);
@@ -758,7 +758,7 @@ export default function App() {
                 setDraftOffer({ product: '', relevance: '', reason: '', audience: '', transformation: '' } as any);
             }
             setTransientResultOffer(null);
-            setShowFormulaModal(true);
+            openFormulaModal();
         }
     }
   };
@@ -826,8 +826,8 @@ export default function App() {
                 setOffers(savedOffers);
                 setProgress(savedProgress);
                 setNeedsOfferUpdate(await StorageManager.load(STORAGE_KEYS.NEEDS_OFFER_UPDATE, {}));
-                setShowSuccessToast("Intelligence Matrix Synchronized!");
-                setTimeout(() => setShowSuccessToast(null), 3500);
+                showSuccessToastMsg("Intelligence Matrix Synchronized!");
+                setTimeout(() => dismissSuccess(), 3500);
             }}
           />
         </TransitionWrapper>
@@ -851,8 +851,8 @@ export default function App() {
                     offer={currentOffer}
                     avatars={currentAvatars}
                     onComplete={() => {
-                        setShowSuccessToast("Strategic Blueprints Ready in Hub!");
-                        setTimeout(() => setShowSuccessToast(null), 3500);
+                        showSuccessToastMsg("Strategic Blueprints Ready in Hub!");
+                        setTimeout(() => dismissSuccess(), 3500);
                         setCurrentView('returning');
                     }}
                 />
@@ -1110,7 +1110,7 @@ export default function App() {
           {/* Intelligence Hub as a Side Panel */}
           <IntelligenceHub 
             isOpen={isHubOpen}
-            onClose={() => setIsHubOpen(false)}
+            onClose={() => closeHub()}
             companies={companies}
             offers={offers}
             companyProgress={progress}
@@ -1127,7 +1127,7 @@ export default function App() {
                 <motion.button
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  onClick={() => setIsHubOpen(true)}
+                  onClick={() => openHub()}
                   className="fixed bottom-10 left-10 w-16 h-16 bg-[#1D1D1F] shadow-2xl rounded-[22px] flex items-center justify-center z-50 text-white hover:scale-110 active:scale-95 transition-all group border border-white/10"
                 >
                   <Brain size={28} strokeWidth={2} className="text-white group-hover:rotate-12 transition-transform duration-500" />
@@ -1173,7 +1173,7 @@ export default function App() {
                                <p className="text-[14px] font-bold leading-tight line-clamp-3">{showErrorToast}</p>
                             </div>
                             <button 
-                              onClick={() => setShowErrorToast(null)}
+                              onClick={() => dismissError()}
                               className="p-2 hover:bg-white/10 rounded-full transition-colors ml-2 shrink-0 border border-white/10"
                             >
                               <X size={18} />
@@ -1185,7 +1185,7 @@ export default function App() {
 
           <ConflictModal 
             isOpen={showConflictModal}
-            onClose={() => setShowConflictModal(false)}
+            onClose={() => closeConflictModal()}
             onOverwrite={() => {
               if (pendingSaveType === 'company') saveCompany(false);
               if (pendingSaveType === 'offer') handleGenerateOffer(true);
@@ -1202,9 +1202,9 @@ export default function App() {
                   setCompanies([...companies, duplicatedCompany]);
                   setActiveCompanyId(newCid);
                   setProgress({...progress, [newCid]: { stage1Complete: true, stage2Complete: false, stage3Complete: false }});
-                  setShowConflictModal(false);
-                  setShowSuccessToast("Offer duplicated to new project!");
-                  setTimeout(() => setShowSuccessToast(null), 3500);
+                  closeConflictModal();
+                  showSuccessToastMsg("Offer duplicated to new project!");
+                  setTimeout(() => dismissSuccess(), 3500);
                   setTimeout(() => {
                       handleGenerateOffer(true, newCid); 
                   }, 100);
@@ -1217,7 +1217,7 @@ export default function App() {
           <FormulaEditorModal 
               isOpen={showFormulaModal}
               onClose={() => {
-                  setShowFormulaModal(false);
+                  closeFormulaModal();
                   setTransientResultOffer(null);
               }}
               draftOffer={draftOffer}
@@ -1232,12 +1232,12 @@ export default function App() {
 
           <CompanyEditorModal 
               isOpen={showCompanyModal}
-              onClose={() => setShowCompanyModal(false)}
+              onClose={() => closeCompanyModal()}
               draftCompany={draftCompany}
               isOfferComplete={activeCompanyId ? progress[activeCompanyId]?.stage2Complete : false}
               onUpdateDraft={(k, v) => setDraftCompany(prev => ({...prev, [k]: v}))}
               onSave={() => {
-                  setShowCompanyModal(false);
+                  closeCompanyModal();
                   handleFinishStage1();
               }}
           />
