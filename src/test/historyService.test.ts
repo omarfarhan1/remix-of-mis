@@ -2,14 +2,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { addToEditHistory, buildFewShotContext, buildIndustryContext, updateIndustryIntelligence } from '../services/historyService';
 import { STORAGE_KEYS, StorageManager } from '../lib/storage';
 
+const { historyStore } = vi.hoisted(() => ({ historyStore: new Map<string, unknown>() }));
 vi.mock('../lib/storage', async (importOriginal) => {
-  const store = new Map<string, any>();
   const mod = await importOriginal<typeof import('../lib/storage')>();
   return {
     ...mod,
     StorageManager: {
-      load: vi.fn(async (key: string, def: any) => store.get(key) ?? def),
-      save: vi.fn(async (key: string, val: any) => store.set(key, val)),
+      load: vi.fn(async (key: string, def: unknown) => historyStore.get(key) ?? def),
+      save: vi.fn(async (key: string, val: unknown) => { historyStore.set(key, val); }),
     },
     STORAGE_KEYS: mod.STORAGE_KEYS,
   };
@@ -19,6 +19,7 @@ const { StorageManager: SM } = await import('../lib/storage');
 
 describe('historyService', () => {
   beforeEach(() => {
+    historyStore.clear();
     vi.clearAllMocks();
   });
 
