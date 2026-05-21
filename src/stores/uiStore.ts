@@ -142,6 +142,7 @@ export const useToasts = () =>
   useUIStore(useShallow((s) => ({
     successToast: s.successToast,
     errorToast: s.errorToast,
+    dismissSuccess: s.dismissSuccess,
     dismissError: s.dismissError,
   })));
 
