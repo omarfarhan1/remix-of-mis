@@ -37,23 +37,30 @@ import { getOfferSteps } from './constants/offerSteps';
 import { ConsultantReport } from './components/ConsultantReport';
 import { generateStage1Synthesis, generateStage2Synthesis, generateStage3Synthesis, SynthesisReport } from './services/synthesisService';
 import { StorageManager, STORAGE_KEYS, exportSessionData, importSessionData } from './lib/storage';
+import {
+  useUIStore,
+  useTheme,
+  useThemeControls,
+  useHubOpen,
+  useHubControls,
+  useFormulaModal,
+  useCompanyModal,
+  useConflictModal,
+  useToasts,
+  useToastActions,
+} from './stores/uiStore';
 
 export default function App() {
-  // Theme State
-  const [theme, setTheme] = React.useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('mis_theme');
-    if (saved) return saved as 'light' | 'dark';
-    return 'dark';
-  });
-
-  React.useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-    localStorage.setItem('mis_theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  // UI State (theme, modals, toasts, hub) lives in uiStore.
+  const theme = useTheme();
+  const { toggleTheme } = useThemeControls();
+  const isHubOpen = useHubOpen();
+  const { openHub, closeHub } = useHubControls();
+  const { isOpen: showFormulaModal, open: openFormulaModal, close: closeFormulaModal } = useFormulaModal();
+  const { isOpen: showCompanyModal, open: openCompanyModal, close: closeCompanyModal } = useCompanyModal();
+  const { isOpen: showConflictModal, pendingSaveType, open: openConflictModal, close: closeConflictModal } = useConflictModal();
+  const { successToast: showSuccessToast, errorToast: showErrorToast, dismissError } = useToasts();
+  const { showSuccess: showSuccessToastMsg, showError: showErrorToastMsg } = useToastActions();
 
   // Persistence State
   const [companies, setCompanies] = React.useState<Company[]>([]);
@@ -72,8 +79,6 @@ export default function App() {
   
   const offerSteps = getOfferSteps(activeCompany || {}, draftOffer);
 
-  const [isHubOpen, setIsHubOpen] = React.useState(false);
-
   // Runtime State
   const [currentView, setCurrentView] = React.useState<'welcome' | 'returning' | 'stage1' | 'stage2' | 'stage3' | 'stage4'>('welcome');
   const [stageStep, setStageStep] = React.useState(1);
@@ -82,19 +87,11 @@ export default function App() {
   const [isSynthesizing, setIsSynthesizing] = React.useState(false);
   const [synthesisReport, setSynthesisReport] = React.useState<SynthesisReport | null>(null);
   const [synthesisStage, setSynthesisStage] = React.useState<string>("");
-  const [showFormulaModal, setShowFormulaModal] = React.useState(false);
 
   // Anti-Race Condition Refs (Strategic Session Layer)
   const synthesisAbortRef = React.useRef<AbortController | null>(null);
   const lastSynthesisTimestampRef = React.useRef<number>(0);
   const [transientResultOffer, setTransientResultOffer] = React.useState<string | null>(null);
-  const [showCompanyModal, setShowCompanyModal] = React.useState(false);
-  const [showSuccessToast, setShowSuccessToast] = React.useState<string | null>(null);
-  const [showErrorToast, setShowErrorToast] = React.useState<string | null>(null);
-
-  // Conflict Modal State
-  const [showConflictModal, setShowConflictModal] = React.useState(false);
-  const [pendingSaveType, setPendingSaveType] = React.useState<'company' | 'offer' | null>(null);
 
   const [draftCompany, setDraftCompany] = React.useState<Partial<Company>>({
     name: '',
