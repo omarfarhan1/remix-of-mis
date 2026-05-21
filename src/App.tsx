@@ -59,7 +59,7 @@ export default function App() {
   const { isOpen: showFormulaModal, open: openFormulaModal, close: closeFormulaModal } = useFormulaModal();
   const { isOpen: showCompanyModal, open: openCompanyModal, close: closeCompanyModal } = useCompanyModal();
   const { isOpen: showConflictModal, pendingSaveType, open: openConflictModal, close: closeConflictModal } = useConflictModal();
-  const { successToast: showSuccessToast, errorToast: showErrorToast, dismissError } = useToasts();
+  const { successToast: showSuccessToast, errorToast: showErrorToast, dismissError, dismissSuccess } = useToasts();
   const { showSuccess: showSuccessToastMsg, showError: showErrorToastMsg } = useToastActions();
 
   // Persistence State
