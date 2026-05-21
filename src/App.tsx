@@ -404,8 +404,7 @@ export default function App() {
 
   const handleFinishStage1 = () => {
     if (activeCompanyId && checkCompanyChanges()) {
-      setPendingSaveType('company');
-      setShowConflictModal(true);
+      openConflictModal('company');
       return;
     }
     saveCompany(false);
@@ -455,8 +454,7 @@ export default function App() {
     }
 
     if (!forceOverwrite && offers[targetComp.id] && checkOfferChanges()) {
-      setPendingSaveType('offer');
-      setShowConflictModal(true);
+      openConflictModal('offer');
       return;
     }
     
