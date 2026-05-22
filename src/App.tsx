@@ -256,46 +256,59 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        <ConflictModal
-          isOpen={showConflictModal}
-          onClose={() => closeConflictModal()}
-          onOverwrite={() => {
-            if (pendingSaveType === 'company') saveCompany(false);
-            if (pendingSaveType === 'offer') handleGenerateOffer(true);
-          }}
-          onCreateNew={() => {
-            if (pendingSaveType === 'company') saveCompany(true);
-            if (pendingSaveType === 'offer') handleDuplicateProjectFromOffer();
-          }}
-          title={pendingSaveType === 'company' ? "Update Company Profile?" : "Update Offer Formula?"}
-          description={pendingSaveType === 'company' ? "You've changed your company details. Overwrite the original profile or save as a new project?" : "You've changed your offer formula. Do you want to update the current offer or create a new project for this version?"}
-        />
+        {/* Modals — only mount when open to defer their chunks */}
+        {showConflictModal && (
+          <Suspense fallback={null}>
+            <ConflictModal
+              isOpen={showConflictModal}
+              onClose={() => closeConflictModal()}
+              onOverwrite={() => {
+                if (pendingSaveType === 'company') saveCompany(false);
+                if (pendingSaveType === 'offer') handleGenerateOffer(true);
+              }}
+              onCreateNew={() => {
+                if (pendingSaveType === 'company') saveCompany(true);
+                if (pendingSaveType === 'offer') handleDuplicateProjectFromOffer();
+              }}
+              title={pendingSaveType === 'company' ? "Update Company Profile?" : "Update Offer Formula?"}
+              description={pendingSaveType === 'company' ? "You've changed your company details. Overwrite the original profile or save as a new project?" : "You've changed your offer formula. Do you want to update the current offer or create a new project for this version?"}
+            />
+          </Suspense>
+        )}
 
-        <FormulaEditorModal
-          isOpen={showFormulaModal}
-          onClose={() => {
-            closeFormulaModal();
-            setTransientResultOffer(null);
-          }}
-          draftOffer={draftOffer}
-          companyContext={activeCompany || undefined}
-          onUpdateDraft={(k, v) => setDraftOffer(prev => ({ ...prev, [k]: v }))}
-          onGenerate={() => { handleGenerateOffer(); }}
-          isGenerating={isGenerating}
-          resultOffer={transientResultOffer || undefined}
-        />
+        {showFormulaModal && (
+          <Suspense fallback={null}>
+            <FormulaEditorModal
+              isOpen={showFormulaModal}
+              onClose={() => {
+                closeFormulaModal();
+                setTransientResultOffer(null);
+              }}
+              draftOffer={draftOffer}
+              companyContext={activeCompany || undefined}
+              onUpdateDraft={(k, v) => setDraftOffer(prev => ({ ...prev, [k]: v }))}
+              onGenerate={() => { handleGenerateOffer(); }}
+              isGenerating={isGenerating}
+              resultOffer={transientResultOffer || undefined}
+            />
+          </Suspense>
+        )}
 
-        <CompanyEditorModal
-          isOpen={showCompanyModal}
-          onClose={() => closeCompanyModal()}
-          draftCompany={draftCompany}
-          isOfferComplete={activeCompanyId ? progress[activeCompanyId]?.stage2Complete : false}
-          onUpdateDraft={(k, v) => setDraftCompany(prev => ({ ...prev, [k]: v }))}
-          onSave={() => {
-            closeCompanyModal();
-            handleFinishStage1();
-          }}
-        />
+        {showCompanyModal && (
+          <Suspense fallback={null}>
+            <CompanyEditorModal
+              isOpen={showCompanyModal}
+              onClose={() => closeCompanyModal()}
+              draftCompany={draftCompany}
+              isOfferComplete={activeCompanyId ? progress[activeCompanyId]?.stage2Complete : false}
+              onUpdateDraft={(k, v) => setDraftCompany(prev => ({ ...prev, [k]: v }))}
+              onSave={() => {
+                closeCompanyModal();
+                handleFinishStage1();
+              }}
+            />
+          </Suspense>
+        )}
       </div>
     </ErrorBoundary>
   );
