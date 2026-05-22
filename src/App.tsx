@@ -122,8 +122,7 @@ export default function App() {
   } = useOfferActions();
 
   const activeCompany = companies.find(c => c.id === activeCompanyId);
-  
-  const offerSteps = getOfferSteps(activeCompany || {}, draftOffer);
+
 
   // Navigation / workflow — currentView / stageStep / avatarMethod now in
   // workflowStore (Step 8). No persistence, identical session-local behavior.
