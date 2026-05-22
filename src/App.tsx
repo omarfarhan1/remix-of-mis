@@ -1,10 +1,8 @@
 import React from 'react';
 import { Company, Offer, Progress, Specialization, Avatar } from './types';
-import { Step1Name } from './components/stage1/Step1Name';
-import { Step2Industry } from './components/stage1/Step2Industry';
-import { Step3Specialization } from './components/stage1/Step3Specialization';
-import { Step4USP } from './components/stage1/Step4USP';
-import { SuccessScreen } from './components/stage1/SuccessScreen';
+import { Stage1Routes } from './views/Stage1Routes';
+import { Stage2Routes } from './views/Stage2Routes';
+import { Stage3Routes } from './views/Stage3Routes';
 import { ReturningUserScreen } from './components/ReturningUserScreen';
 import { IntelligenceHub } from './components/IntelligenceHub';
 import { Brain, ChevronRight, Building2, Check, AlertCircle, X } from 'lucide-react';
