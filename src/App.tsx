@@ -674,19 +674,9 @@ export default function App() {
   const handleDeleteCompany = (id: string) => {
     const nextCompanies = companies.filter(c => c.id !== id);
     setCompanies(nextCompanies);
-    
-    setOffers(prev => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-    
-    setProgress(prev => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-    
+
+    removeCompanyData(id);
+
     if (nextCompanies.length === 0) {
         setCurrentView('welcome');
         setActiveCompanyId(null);
