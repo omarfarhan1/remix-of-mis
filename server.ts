@@ -268,7 +268,14 @@ async function startServer() {
     max: 30,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => (req.headers['x-client-id'] as string) || req.ip || 'unknown',
+    // Prefer the explicit client id header; fall back to the official IPv6-safe
+    // helper from express-rate-limit so we don't trigger ERR_ERL_KEY_GEN_IPV6
+    // when the request arrives over IPv6 (e.g. ::1 in local dev).
+    keyGenerator: (req, res) => {
+      const clientId = req.headers['x-client-id'];
+      if (typeof clientId === 'string' && clientId.length > 0) return clientId;
+      return ipKeyGenerator(req.ip ?? '');
+    },
     message: { error: 'AI request rate limit exceeded. Please wait before retrying.' }
   });
 
