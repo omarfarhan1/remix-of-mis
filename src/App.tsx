@@ -65,6 +65,12 @@ import {
   useGenerationError,
   useOfferActions,
 } from './stores/offerStore';
+import {
+  useIsSynthesizing,
+  useSynthesisReport,
+  useSynthesisStage,
+  useSynthesisActions,
+} from './stores/synthesisStore';
 
 export default function App() {
   // UI State (theme, modals, toasts, hub) lives in uiStore.
@@ -120,13 +126,17 @@ export default function App() {
   const [currentView, setCurrentView] = React.useState<'welcome' | 'returning' | 'stage1' | 'stage2' | 'stage3' | 'stage4'>('welcome');
   const [stageStep, setStageStep] = React.useState(1);
   const [avatarMethod, setAvatarMethod] = React.useState<string | null>(null);
-  const [isSynthesizing, setIsSynthesizing] = React.useState(false);
-  const [synthesisReport, setSynthesisReport] = React.useState<SynthesisReport | null>(null);
-  const [synthesisStage, setSynthesisStage] = React.useState<string>("");
 
-  // Anti-Race Condition Refs (Strategic Session Layer)
-  const synthesisAbortRef = React.useRef<AbortController | null>(null);
-  const lastSynthesisTimestampRef = React.useRef<number>(0);
+  // Synthesis domain — state + abort/staleness primitives in synthesisStore (Step 7).
+  const isSynthesizing = useIsSynthesizing();
+  const synthesisReport = useSynthesisReport();
+  const synthesisStage = useSynthesisStage();
+  const {
+    beginRequest: beginSynthesisRequest,
+    setIsSynthesizing,
+    setSynthesisReport,
+    reset: resetSynthesis,
+  } = useSynthesisActions();
 
   // Load from Storage (IndexedDB Migration). Company and offer domains are
   // hydrated by their respective stores; App only branches on first-run vs returning.
@@ -289,25 +299,13 @@ export default function App() {
   };
 
   const handleStartSynthesis = async (stage: string, overrideCompany?: Company, overrideOffer?: Offer, overrideAvatars?: Avatar[]) => {
-    // 1. Abort any previous synthesis
-    if (synthesisAbortRef.current) {
-      synthesisAbortRef.current.abort();
-    }
-    const controller = new AbortController();
-    synthesisAbortRef.current = controller;
-
-    // 2. Local timestamp to track the "latest" request
-    const requestTimestamp = Date.now();
-    lastSynthesisTimestampRef.current = requestTimestamp;
-
-    setIsSynthesizing(true);
-    setSynthesisStage(stage);
-    setSynthesisReport(null);
+    // synthesisStore handles abort + timestamp + reactive state transitions.
+    const request = beginSynthesisRequest(stage);
 
     try {
       let report: SynthesisReport;
       const targetCompany = overrideCompany || companies.find(c => c.id === activeCompanyId) || draftCompany;
-      
+
       if (!targetCompany) {
         throw new Error("No target company found for synthesis");
       }
@@ -315,20 +313,20 @@ export default function App() {
       const companyData = targetCompany as Company;
 
       if (stage === 'Identity') {
-         report = await generateStage1Synthesis(companyData, controller.signal);
+         report = await generateStage1Synthesis(companyData, request.signal);
       } else if (stage === 'Strategy' && activeCompanyId) {
          const targetOffer = overrideOffer || offers[activeCompanyId];
          if (!targetOffer) throw new Error("No strategy data found for analysis");
-         report = await generateStage2Synthesis(companyData, targetOffer, controller.signal);
+         report = await generateStage2Synthesis(companyData, targetOffer, request.signal);
       } else if (stage === 'Modeling' && activeCompanyId) {
          const targetAvatars = overrideAvatars || progress[activeCompanyId]?.avatars || [];
-         report = await generateStage3Synthesis(companyData, targetAvatars, controller.signal);
+         report = await generateStage3Synthesis(companyData, targetAvatars, request.signal);
       } else {
          throw new Error("Invalid stage for synthesis or missing data");
       }
-      
-      // 3. Discard if this isn't the most recent request or it was aborted
-      if (controller.signal.aborted || lastSynthesisTimestampRef.current !== requestTimestamp) {
+
+      // Discard if this isn't the most recent request or it was aborted
+      if (!request.isLatest()) {
         console.log("Strategic synthesis request discarded (stale or aborted).");
         return;
       }
@@ -336,23 +334,23 @@ export default function App() {
       setSynthesisReport(report);
     } catch (err: any) {
       // Gracefully handle manual aborts
-      const isAbort = 
-        err.name === 'AbortError' || 
+      const isAbort =
+        err.name === 'AbortError' ||
         err.name === 'CanceledError' ||
         err.message?.toLowerCase().includes('aborted') ||
         err.message?.toLowerCase().includes('canceled') ||
-        controller.signal.aborted;
+        request.signal.aborted;
 
       if (isAbort) {
         return;
       }
-      
+
       console.error("Synthesis failed:", err);
-      
+
       const errorMessage = err.message || "An unexpected strategic error occurred.";
       const isQuota = errorMessage.includes('429') || errorMessage.includes('quota');
       const isOverloaded = errorMessage.includes('503') || err.status === 503;
-      
+
       if (isQuota) {
         showErrorToastMsg("Intelligence quota reached. Please pause for 60 seconds before re-engaging.");
       } else if (isOverloaded) {
@@ -360,8 +358,8 @@ export default function App() {
       } else {
         showErrorToastMsg(`Strategy Analysis Interrupted: ${errorMessage}`);
       }
-      
-      if (lastSynthesisTimestampRef.current === requestTimestamp) {
+
+      if (request.isLatest()) {
         setIsSynthesizing(false);
       }
     }
@@ -871,8 +869,7 @@ export default function App() {
                       stageName={synthesisStage}
                       onProceed={handleProceedAfterSynthesis}
                       onBack={() => {
-                        setIsSynthesizing(false);
-                        setSynthesisReport(null);
+                        resetSynthesis();
                         // Stay on current stage to re-edit
                       }}
                     />
