@@ -1,8 +1,5 @@
 import React from 'react';
-import { Company, Offer, Progress, Specialization, Avatar } from './types';
-import { Stage1Routes } from './views/Stage1Routes';
-import { Stage2Routes } from './views/Stage2Routes';
-import { Stage3Routes } from './views/Stage3Routes';
+import { Company } from './types';
 import { WelcomeView } from './views/WelcomeView';
 import { ReturningView } from './views/ReturningView';
 import { Stage4View } from './views/Stage4View';
@@ -10,19 +7,12 @@ import { StageShell } from './views/StageShell';
 import { IntelligenceHub } from './components/IntelligenceHub';
 import { Brain, Check, AlertCircle, X } from 'lucide-react';
 import { cn } from './lib/utils';
-import { generateAIContent } from './services/aiService';
-import { consolidateOffer, computeOfferScore } from './services/offerService';
-import { startOfferWizardSession } from './services/offerWizardService';
-import { addToEditHistory, updateIndustryIntelligence } from './services/historyService';
-import { generateScoreDelta, rankAvatarsForDisplay } from './services/intelligenceService';
 import { ConflictModal } from './components/ConflictModal';
 import { FormulaEditorModal } from './components/FormulaEditorModal';
 import { CompanyEditorModal } from './components/CompanyEditorModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
-import { generateStage1Synthesis, generateStage2Synthesis, generateStage3Synthesis, SynthesisReport } from './services/synthesisService';
 import {
-  useUIStore,
   useTheme,
   useThemeControls,
   useHubOpen,
@@ -31,13 +21,11 @@ import {
   useCompanyModal,
   useConflictModal,
   useToasts,
-  useToastActions,
 } from './stores/uiStore';
 import {
   useCompanies,
   useActiveCompanyId,
   useDraftCompany,
-  useNeedsOfferUpdate,
   useCompanyActions,
 } from './stores/companyStore';
 import {
@@ -46,26 +34,10 @@ import {
   useDraftOffer,
   useTransientResultOffer,
   useIsGenerating,
-  useGenerationError,
   useOfferActions,
 } from './stores/offerStore';
-import {
-  useIsSynthesizing,
-  useSynthesisReport,
-  useSynthesisStage,
-  useSynthesisActions,
-} from './stores/synthesisStore';
-import {
-  useCurrentView,
-  useStageStep,
-  useAvatarMethod,
-  useWorkflowActions,
-} from './stores/workflowStore';
-import {
-  useStageInsights,
-  useIsInsightsLoading,
-  useInsightsActions,
-} from './stores/insightsStore';
+import { useCurrentView } from './stores/workflowStore';
+import { useWorkflowOrchestration } from './hooks/useWorkflowOrchestration';
 
 export default function App() {
   // UI State (theme, modals, toasts, hub) lives in uiStore.
