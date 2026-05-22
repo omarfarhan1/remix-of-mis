@@ -282,9 +282,29 @@ async function startServer() {
   app.use(globalRateLimit);
   app.use('/api/ai', aiRateLimit);
 
+  // Graceful failure: short-circuit all AI calls when no provider key is set.
+  // Keeps the UI/preview usable without leaking the underlying SDK error.
+  app.use('/api/ai', (req, res, next) => {
+    if (!process.env.GEMINI_API_KEY && !process.env.OPENROUTER_API_KEY) {
+      return res.status(503).json({
+        error: "AI provider not configured. Add GEMINI_API_KEY to your .env (see .env.example) and restart the dev server.",
+        type: "AI_NOT_CONFIGURED",
+      });
+    }
+    next();
+  });
+
   // Health & Monitoring
   app.get("/api/health", (req, res) => {
-    res.json({ status: "healthy", concurrency: pendingRequests.size, breakers: CIRCUIT_BREAKER });
+    res.json({
+      status: "healthy",
+      ai: {
+        gemini: !!process.env.GEMINI_API_KEY,
+        openrouter: !!process.env.OPENROUTER_API_KEY,
+      },
+      concurrency: pendingRequests.size,
+      breakers: CIRCUIT_BREAKER,
+    });
   });
 
   // Main Orchestration Route
