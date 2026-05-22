@@ -1,23 +1,15 @@
 import React from 'react';
 import { Company, Offer, Progress, Specialization, Avatar } from './types';
-import { Step1Name } from './components/stage1/Step1Name';
-import { Step2Industry } from './components/stage1/Step2Industry';
-import { Step3Specialization } from './components/stage1/Step3Specialization';
-import { Step4USP } from './components/stage1/Step4USP';
-import { SuccessScreen } from './components/stage1/SuccessScreen';
+import { Stage1Routes } from './views/Stage1Routes';
+import { Stage2Routes } from './views/Stage2Routes';
+import { Stage3Routes } from './views/Stage3Routes';
 import { ReturningUserScreen } from './components/ReturningUserScreen';
 import { IntelligenceHub } from './components/IntelligenceHub';
-import { Brain, ChevronRight, Building2, Check, AlertCircle, X } from 'lucide-react';
+import { Brain, ChevronRight, Check, AlertCircle, X } from 'lucide-react';
 import { ModuleHeader } from './components/ModuleHeader';
 import { PhaseNav } from './components/PhaseNav';
-import { OfferStep } from './components/stage2/OfferStep';
 import { cn } from './lib/utils';
-import { GeneratingScreen } from './components/stage2/GeneratingScreen';
-import { OfferResult } from './components/stage2/OfferResult';
-import { AvatarMethodSelector } from './components/stage3/AvatarMethodSelector';
-import { AIGeneratedAvatarWizard } from './components/stage3/AIGeneratedAvatarWizard';
 import { StrategicScaling } from './components/stage4/StrategicScaling';
-import { ActionableInsightsCard } from './components/intel/ActionableInsightsCard';
 import { generateAIContent } from './services/aiService';
 import { consolidateOffer, computeOfferScore } from './services/offerService';
 import { startOfferWizardSession, endWizardSession } from './services/offerWizardService';
@@ -32,7 +24,7 @@ import { TransitionWrapper } from './components/TransitionWrapper';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
 
-import { getOfferSteps } from './constants/offerSteps';
+
 
 import { ConsultantReport } from './components/ConsultantReport';
 import { generateStage1Synthesis, generateStage2Synthesis, generateStage3Synthesis, SynthesisReport } from './services/synthesisService';
@@ -130,8 +122,7 @@ export default function App() {
   } = useOfferActions();
 
   const activeCompany = companies.find(c => c.id === activeCompanyId);
-  
-  const offerSteps = getOfferSteps(activeCompany || {}, draftOffer);
+
 
   // Navigation / workflow — currentView / stageStep / avatarMethod now in
   // workflowStore (Step 8). No persistence, identical session-local behavior.
@@ -880,193 +871,18 @@ export default function App() {
                 ) : (
                   <TransitionWrapper id={`${currentView}-${stageStep}`} key={`${currentView}-${stageStep}`}>
                     {currentView === 'stage1' && (
-                      <div className="pt-4">
-                          {stageStep === 1 && (
-                            <Step1Name 
-                              name={draftCompany.name || ''} 
-                              logoUrl={draftCompany.logoUrl || ''}
-                              country={draftCompany.country || 'Global'}
-                              websiteUrl={draftCompany.websiteUrl || ''}
-                              onNameChange={(name) => setDraftCompany({...draftCompany, name})} 
-                              onLogoChange={(logoUrl) => setDraftCompany({...draftCompany, logoUrl})}
-                              onCountryChange={(country) => setDraftCompany({...draftCompany, country, isGlobalMode: country === 'Global'})}
-                              onWebsiteChange={(websiteUrl) => setDraftCompany({...draftCompany, websiteUrl})}
-                              onContinue={() => setStageStep(2)}
-                              onStepNav={(s) => setStageStep(s)}
-                              isStageComplete={progress[activeCompany?.id || '']?.stage1Complete}
-                            />
-                          )}
-                          {stageStep === 2 && (
-                            <Step2Industry 
-                              value={draftCompany.industry || ''} 
-                              logoUrl={draftCompany.logoUrl}
-                              onChange={(industry) => setDraftCompany({...draftCompany, industry, specializations: []})} 
-                              onContinue={() => setStageStep(3)}
-                              onBack={() => setStageStep(1)}
-                              onStepNav={(s) => setStageStep(s)}
-                              isStageComplete={progress[activeCompany?.id || '']?.stage1Complete}
-                            />
-                          )}
-                          {stageStep === 3 && (
-                            <Step3Specialization 
-                              industry={draftCompany.industry || ''}
-                              logoUrl={draftCompany.logoUrl}
-                              values={draftCompany.specializations || []}
-                              onChange={(specializations) => setDraftCompany({...draftCompany, specializations})}
-                              onContinue={() => setStageStep(4)}
-                              onBack={() => setStageStep(2)}
-                              onStepNav={(s) => setStageStep(s)}
-                              isStageComplete={progress[activeCompany?.id || '']?.stage1Complete}
-                            />
-                          )}
-                          {stageStep === 4 && (
-                            <Step4USP 
-                              companyName={draftCompany.name || ''}
-                              industry={draftCompany.industry || ''}
-                              logoUrl={draftCompany.logoUrl}
-                              specializations={(draftCompany.specializations || []).map(s => s.name)}
-                              value={draftCompany.usp || ''}
-                              onChange={(usp) => setDraftCompany({...draftCompany, usp})}
-                              onSave={handleFinishStage1}
-                              onBack={() => setStageStep(3)}
-                              onStepNav={(s) => setStageStep(s)}
-                              isStageComplete={progress[activeCompany?.id || '']?.stage1Complete}
-                            />
-                          )}
-                          {stageStep === 5 && (
-                            <div className="space-y-0">
-                              <SuccessScreen
-                                companyName={draftCompany.name || ''}
-                                onAddAnother={handleStartStage1}
-                                onBuildOffer={() => handleStartStage2()}
-                                onStepNav={(s) => setStageStep(s)}
-                              />
-                              <ActionableInsightsCard 
-                                insights={stageInsights[`${activeCompanyId}-company`] || []}
-                                isLoading={isInsightsLoading}
-                                onAction={(ins) => {
-                                  if (ins.action.toLowerCase().includes("pick one specialization")) {
-                                    setStageStep(3);
-                                  } else if (ins.action.toLowerCase().includes("country")) {
-                                    setStageStep(1);
-                                  } else {
-                                    setStageStep(4);
-                                  }
-                                }}
-                              />
-                            </div>
-                          )}
-                      </div>
-                  )}
-
-                  {currentView === 'stage2' && (
-                      <div className="pt-4">
-                          {isGenerating ? (
-                              <GeneratingScreen />
-                          ) : generationError ? (
-                              <div className="max-w-[640px] mx-auto px-4 pt-20 pb-20 text-center">
-                                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
-                                  <Building2 size={32} />
-                                </div>
-                                <h3 className="text-[20px] font-medium mb-2">Generation Failed</h3>
-                                <p className="text-[15px] text-[var(--color-text-secondary)] mb-8 leading-relaxed">
-                                  {generationError}
-                                </p>
-                                <div className="flex justify-center gap-4">
-                                  <button onClick={() => setStageStep(5)} className="px-6 py-3 rounded-2xl bg-gray-100 text-[14px] font-bold">
-                                    Edit Formula
-                                  </button>
-                                  <button onClick={() => handleGenerateOffer(true)} className="btn-primary px-8">
-                                    Try Again
-                                  </button>
-                                </div>
-                              </div>
-                          ) : stageStep <= 5 ? (
-                              <OfferStep 
-                                  step={stageStep}
-                                  totalSteps={5}
-                                  stepName={offerSteps[stageStep-1].name}
-                                  title={offerSteps[stageStep-1].title}
-                                  description={offerSteps[stageStep-1].description}
-                                  example={offerSteps[stageStep-1].example}
-                                  placeholder={offerSteps[stageStep-1].placeholder}
-                                  fieldKey={offerSteps[stageStep-1].key}
-                                  company={activeCompany || {}}
-                                  draftOffer={draftOffer}
-                                  value={(draftOffer as any)[offerSteps[stageStep-1].key] || ''}
-                                  onChange={(val) => setDraftOffer({...draftOffer, [offerSteps[stageStep-1].key]: val})}
-                                  onNext={() => stageStep === 5 ? handleGenerateOffer() : setStageStep(stageStep + 1)}
-                                  onBack={() => stageStep === 1 ? setCurrentView('returning') : setStageStep(stageStep - 1)}
-                                  onStepNav={(s) => setStageStep(s)}
-                                  isLast={stageStep === 5}
-                                  isStageComplete={progress[activeCompany?.id || '']?.stage2Complete}
-                              />
-                          ) : (
-                              <div className="space-y-0">
-                                  <OfferResult 
-                                      company={activeCompany!}
-                                      offer={offers[activeCompanyId!]!}
-                                      onUpdateOffer={(updated) => {
-                                        setOffers(prev => ({ ...prev, [activeCompanyId!]: updated }));
-                                      }}
-                                      onRegenerate={() => {
-                                          handleGenerateOffer();
-                                      }}
-                                      onEdit={() => {
-                                          setDraftOffer(offers[activeCompanyId!] || { product: '', relevance: '', reason: '', audience: '', transformation: '' } as any);
-                                          setStageStep(1); // Go to wizard, NOT modal
-                                      }}
-                                      onContinue={() => {
-                                          setCurrentView('stage3');
-                                          setStageStep(1);
-                                      }}
-                                      progress={progress[activeCompanyId!]}
-                                      onStepNav={(s) => setStageStep(s)}
-                                  />
-                                  <ActionableInsightsCard 
-                                    insights={stageInsights[`${activeCompanyId}-offer`] || []}
-                                    isLoading={isInsightsLoading}
-                                    onAction={(ins) => {
-                                      if (ins.action.toLowerCase().includes("urgency")) {
-                                        setStageStep(5);
-                                      } else {
-                                        setStageStep(1);
-                                      }
-                                    }}
-                                  />
-                              </div>
-                          )}
-                      </div>
-                  )}
-
-                  {currentView === 'stage3' && (
-                    <div className="pt-4">
-                      {!avatarMethod ? (
-                        <AvatarMethodSelector onSelect={(m) => setAvatarMethod(m)} />
-                      ) : (
-                        avatarMethod === 'ai' && (
-                          <AIGeneratedAvatarWizard 
-                            company={activeCompany!}
-                            offer={offers[activeCompanyId!]!}
-                            strategicReport={progress[activeCompanyId!]?.synthesisReports?.['Strategy']}
-                            onComplete={handleCompleteAvatars}
-                            onBack={() => setAvatarMethod(null)}
-                            onUpdateCompany={(updated) => {
-                              setCompanies(prev => prev.map(c => c.id === updated.id ? updated : c));
-                            }}
-                            onAvatarsGenerated={(avatars) => {
-                                loadStageInsights('avatars', { avatars }, activeCompany!);
-                            }}
-                            onDeepDiveComplete={(avatar) => {
-                                loadStageInsights('deepdive', { avatar }, activeCompany!);
-                            }}
-                            insights={stageInsights[`${activeCompanyId}-avatars`] || stageInsights[`${activeCompanyId}-deepdive`] || []}
-                            isInsightsLoading={isInsightsLoading}
-                          />
-                        )
-                      )}
-                    </div>
-                  )}
+                      <Stage1Routes
+                        onFinishStage1={handleFinishStage1}
+                        onStartStage1={handleStartStage1}
+                        onStartStage2={() => handleStartStage2()}
+                      />
+                    )}
+                    {currentView === 'stage2' && (
+                      <Stage2Routes onGenerateOffer={handleGenerateOffer} />
+                    )}
+                    {currentView === 'stage3' && (
+                      <Stage3Routes onCompleteAvatars={handleCompleteAvatars} />
+                    )}
                   </TransitionWrapper>
                 )}
               </AnimatePresence>
