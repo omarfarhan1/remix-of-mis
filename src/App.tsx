@@ -56,6 +56,15 @@ import {
   useNeedsOfferUpdate,
   useCompanyActions,
 } from './stores/companyStore';
+import {
+  useOffers,
+  useProgress,
+  useDraftOffer,
+  useTransientResultOffer,
+  useIsGenerating,
+  useGenerationError,
+  useOfferActions,
+} from './stores/offerStore';
 
 export default function App() {
   // UI State (theme, modals, toasts, hub) lives in uiStore.
@@ -85,18 +94,25 @@ export default function App() {
     hydrate: hydrateCompanyStore,
   } = useCompanyActions();
 
-  // Offers / progress still managed locally — moves in Step 5.
-  const [offers, setOffers] = React.useState<Record<string, Offer>>({});
-  const [progress, setProgress] = React.useState<Record<string, Progress>>({});
+  // Offer domain — offers / progress / draftOffer / runtime gen flags now in offerStore (Step 5).
+  const offers = useOffers();
+  const progress = useProgress();
+  const draftOffer = useDraftOffer();
+  const transientResultOffer = useTransientResultOffer();
+  const isGenerating = useIsGenerating();
+  const generationError = useGenerationError();
+  const {
+    setOffers,
+    setProgress,
+    setDraftOffer,
+    setTransientResultOffer,
+    setIsGenerating,
+    setGenerationError,
+    removeCompanyData,
+    hydrate: hydrateOfferStore,
+  } = useOfferActions();
 
   const activeCompany = companies.find(c => c.id === activeCompanyId);
-  const [draftOffer, setDraftOffer] = React.useState<Partial<Offer>>({
-    product: '',
-    relevance: '',
-    reason: '',
-    audience: '',
-    transformation: ''
-  });
   
   const offerSteps = getOfferSteps(activeCompany || {}, draftOffer);
 
@@ -104,7 +120,6 @@ export default function App() {
   const [currentView, setCurrentView] = React.useState<'welcome' | 'returning' | 'stage1' | 'stage2' | 'stage3' | 'stage4'>('welcome');
   const [stageStep, setStageStep] = React.useState(1);
   const [avatarMethod, setAvatarMethod] = React.useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = React.useState(false);
   const [isSynthesizing, setIsSynthesizing] = React.useState(false);
   const [synthesisReport, setSynthesisReport] = React.useState<SynthesisReport | null>(null);
   const [synthesisStage, setSynthesisStage] = React.useState<string>("");
@@ -112,20 +127,15 @@ export default function App() {
   // Anti-Race Condition Refs (Strategic Session Layer)
   const synthesisAbortRef = React.useRef<AbortController | null>(null);
   const lastSynthesisTimestampRef = React.useRef<number>(0);
-  const [transientResultOffer, setTransientResultOffer] = React.useState<string | null>(null);
 
-  // Load from Storage (IndexedDB Migration). Company-domain hydration is delegated
-  // to companyStore; offers/progress still load here until Step 5.
+  // Load from Storage (IndexedDB Migration). Company and offer domains are
+  // hydrated by their respective stores; App only branches on first-run vs returning.
   React.useEffect(() => {
     const initStorage = async () => {
-      const [{ companies: savedCompanies }, savedOffers, savedProgress] = await Promise.all([
+      const [{ companies: savedCompanies }] = await Promise.all([
         hydrateCompanyStore(),
-        StorageManager.load(STORAGE_KEYS.OFFERS, {}),
-        StorageManager.load(STORAGE_KEYS.PROGRESS, {})
+        hydrateOfferStore(),
       ]);
-
-      setOffers(savedOffers);
-      setProgress(savedProgress);
 
       if (savedCompanies.length > 0 && currentView === 'welcome') {
         setCurrentView('returning');
@@ -153,15 +163,6 @@ export default function App() {
       setIsInsightsLoading(false);
     }
   };
-
-  // Persistence for offers/progress remains here until Step 5 (offerStore).
-  React.useEffect(() => {
-    StorageManager.save(STORAGE_KEYS.OFFERS, offers);
-  }, [offers]);
-
-  React.useEffect(() => {
-    StorageManager.save(STORAGE_KEYS.PROGRESS, progress);
-  }, [progress]);
 
   // Actions
   const handleSelectCompany = (id: string, phase?: 'company' | 'offer' | 'avatar') => {
