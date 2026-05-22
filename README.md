@@ -25,22 +25,39 @@ npm install
 
 # 2. Set up environment
 cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
+# Open .env and paste your GEMINI_API_KEY
+#   → Get one (free) at https://aistudio.google.com/
 
 # 3. Run in development
 npm run dev
 ```
 
-App runs at `http://localhost:3000`
+App runs at `http://localhost:3000`.
 
-## Environment Variables
+### Local AI Setup
+
+This project talks **directly** to Gemini (and optionally OpenRouter) from your
+own Express server — there is no Lovable-hosted AI proxy or hidden gateway
+involved in local development.
+
+1. Create a Gemini API key at <https://aistudio.google.com/>.
+2. Put it in `.env` as `GEMINI_API_KEY=...`.
+3. Restart `npm run dev`.
+4. Verify: `curl http://localhost:3000/api/health` should report
+   `"ai": { "gemini": true }`.
+
+If the key is missing, the UI still loads but every `/api/ai/*` request
+returns HTTP `503` with `type: "AI_NOT_CONFIGURED"` and a human-readable
+message. No silent failures, no fake responses.
+
+### Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | ✅ Yes | Google AI Studio key — [get one here](https://aistudio.google.com/) |
-| `OPENROUTER_API_KEY` | No | Fallback provider key |
+| `GEMINI_API_KEY` | ✅ Yes (unless OpenRouter is set) | Google AI Studio key — [get one here](https://aistudio.google.com/) |
+| `OPENROUTER_API_KEY` | No | Optional primary/fallback provider key |
 | `ALLOWED_ORIGINS` | No | CORS whitelist for production (comma-separated URLs) |
-| `NODE_ENV` | No | Set to `production` when deploying |
+| `NODE_ENV` | No | Set to `production` when deploying (missing `GEMINI_API_KEY` becomes fatal) |
 
 ## Production Build
 
