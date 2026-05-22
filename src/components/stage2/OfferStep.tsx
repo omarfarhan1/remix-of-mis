@@ -50,17 +50,19 @@ export const OfferStep: React.FC<OfferStepProps> = ({
   const [isSuggesting, setIsSuggesting] = React.useState(false);
 
   const handleSuggest = async () => {
+    if (!company.id) return;
+    const companyId = company.id;
     if (!value.trim()) {
       setIsSuggesting(true);
       const prompt = `I need help with Step ${step}: ${stepName} (${description}). What are some good directions for ${company.name}?`;
-      const result = await sendWizardStep(prompt);
+      const result = await sendWizardStep(companyId, prompt);
       setAiFeedback(result);
       setIsSuggesting(false);
       return;
     }
 
     setIsSuggesting(true);
-    const result = await sendWizardStep(`My answer for ${stepName} is: "${value}". Please critique and offer better alternatives.`);
+    const result = await sendWizardStep(companyId, `My answer for ${stepName} is: "${value}". Please critique and offer better alternatives.`);
     setAiFeedback(result);
     setIsSuggesting(false);
   };
