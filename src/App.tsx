@@ -151,7 +151,11 @@ export default function App() {
     }
 
     if (currentView === 'stage4') {
-      return <Stage4View />;
+      return (
+        <Suspense fallback={<SectionFallback label="Loading Results" />}>
+          <Stage4View />
+        </Suspense>
+      );
     }
 
     return (
