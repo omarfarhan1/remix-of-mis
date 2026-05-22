@@ -178,19 +178,23 @@ export default function App() {
         "h-screen bg-[var(--color-primary-bg)] flex overflow-hidden matrix-grid transition-all duration-700",
         theme === 'dark' ? "dark" : ""
       )}>
-        {/* Intelligence Hub side panel */}
-        <IntelligenceHub
-          isOpen={isHubOpen}
-          onClose={() => closeHub()}
-          companies={companies}
-          offers={offers}
-          companyProgress={progress}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          onSelectCompany={(id) => handleSelectCompany(id)}
-          onConsolidateOffer={handleConsolidateOffer}
-          onUpdateAvatar={handleUpdateAvatar}
-        />
+        {/* Intelligence Hub side panel — only mount when opened to defer the chunk */}
+        {isHubOpen && (
+          <Suspense fallback={null}>
+            <IntelligenceHub
+              isOpen={isHubOpen}
+              onClose={() => closeHub()}
+              companies={companies}
+              offers={offers}
+              companyProgress={progress}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onSelectCompany={(id) => handleSelectCompany(id)}
+              onConsolidateOffer={handleConsolidateOffer}
+              onUpdateAvatar={handleUpdateAvatar}
+            />
+          </Suspense>
+        )}
 
         <div className="flex-1 flex flex-col min-w-0 relative">
           {/* Floating Intelligence Hub trigger */}
