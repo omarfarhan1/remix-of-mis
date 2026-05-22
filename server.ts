@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import cors from "cors";
 import helmet from "helmet";
-import { rateLimit } from "express-rate-limit";
+import { rateLimit, ipKeyGenerator } from "express-rate-limit";
 import { z } from "zod";
 import crypto from "crypto";
 
@@ -268,16 +268,43 @@ async function startServer() {
     max: 30,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => (req.headers['x-client-id'] as string) || req.ip || 'unknown',
+    // Prefer the explicit client id header; fall back to the official IPv6-safe
+    // helper from express-rate-limit so we don't trigger ERR_ERL_KEY_GEN_IPV6
+    // when the request arrives over IPv6 (e.g. ::1 in local dev).
+    keyGenerator: (req, res) => {
+      const clientId = req.headers['x-client-id'];
+      if (typeof clientId === 'string' && clientId.length > 0) return clientId;
+      return ipKeyGenerator(req.ip ?? '');
+    },
     message: { error: 'AI request rate limit exceeded. Please wait before retrying.' }
   });
 
   app.use(globalRateLimit);
   app.use('/api/ai', aiRateLimit);
 
+  // Graceful failure: short-circuit all AI calls when no provider key is set.
+  // Keeps the UI/preview usable without leaking the underlying SDK error.
+  app.use('/api/ai', (req, res, next) => {
+    if (!process.env.GEMINI_API_KEY && !process.env.OPENROUTER_API_KEY) {
+      return res.status(503).json({
+        error: "AI provider not configured. Add GEMINI_API_KEY to your .env (see .env.example) and restart the dev server.",
+        type: "AI_NOT_CONFIGURED",
+      });
+    }
+    next();
+  });
+
   // Health & Monitoring
   app.get("/api/health", (req, res) => {
-    res.json({ status: "healthy", concurrency: pendingRequests.size, breakers: CIRCUIT_BREAKER });
+    res.json({
+      status: "healthy",
+      ai: {
+        gemini: !!process.env.GEMINI_API_KEY,
+        openrouter: !!process.env.OPENROUTER_API_KEY,
+      },
+      concurrency: pendingRequests.size,
+      breakers: CIRCUIT_BREAKER,
+    });
   });
 
   // Main Orchestration Route
