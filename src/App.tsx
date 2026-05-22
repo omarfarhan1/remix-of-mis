@@ -71,6 +71,12 @@ import {
   useSynthesisStage,
   useSynthesisActions,
 } from './stores/synthesisStore';
+import {
+  useCurrentView,
+  useStageStep,
+  useAvatarMethod,
+  useWorkflowActions,
+} from './stores/workflowStore';
 
 export default function App() {
   // UI State (theme, modals, toasts, hub) lives in uiStore.
@@ -122,10 +128,16 @@ export default function App() {
   
   const offerSteps = getOfferSteps(activeCompany || {}, draftOffer);
 
-  // Runtime State
-  const [currentView, setCurrentView] = React.useState<'welcome' | 'returning' | 'stage1' | 'stage2' | 'stage3' | 'stage4'>('welcome');
-  const [stageStep, setStageStep] = React.useState(1);
-  const [avatarMethod, setAvatarMethod] = React.useState<string | null>(null);
+  // Navigation / workflow — currentView / stageStep / avatarMethod now in
+  // workflowStore (Step 8). No persistence, identical session-local behavior.
+  const currentView = useCurrentView();
+  const stageStep = useStageStep();
+  const avatarMethod = useAvatarMethod();
+  const {
+    setCurrentView,
+    setStageStep,
+    setAvatarMethod,
+  } = useWorkflowActions();
 
   // Synthesis domain — state + abort/staleness primitives in synthesisStore (Step 7).
   const isSynthesizing = useIsSynthesizing();
