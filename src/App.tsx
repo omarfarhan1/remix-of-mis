@@ -3,32 +3,24 @@ import { Company, Offer, Progress, Specialization, Avatar } from './types';
 import { Stage1Routes } from './views/Stage1Routes';
 import { Stage2Routes } from './views/Stage2Routes';
 import { Stage3Routes } from './views/Stage3Routes';
-import { ReturningUserScreen } from './components/ReturningUserScreen';
+import { WelcomeView } from './views/WelcomeView';
+import { ReturningView } from './views/ReturningView';
+import { Stage4View } from './views/Stage4View';
+import { StageShell } from './views/StageShell';
 import { IntelligenceHub } from './components/IntelligenceHub';
-import { Brain, ChevronRight, Check, AlertCircle, X } from 'lucide-react';
-import { ModuleHeader } from './components/ModuleHeader';
-import { PhaseNav } from './components/PhaseNav';
+import { Brain, Check, AlertCircle, X } from 'lucide-react';
 import { cn } from './lib/utils';
-import { StrategicScaling } from './components/stage4/StrategicScaling';
 import { generateAIContent } from './services/aiService';
 import { consolidateOffer, computeOfferScore } from './services/offerService';
-import { startOfferWizardSession, endWizardSession } from './services/offerWizardService';
+import { startOfferWizardSession } from './services/offerWizardService';
 import { addToEditHistory, updateIndustryIntelligence } from './services/historyService';
 import { generateScoreDelta, rankAvatarsForDisplay } from './services/intelligenceService';
-import { validateInputQuality } from './services/validationService';
-import { generateInitialAvatars } from './services/avatarService';
 import { ConflictModal } from './components/ConflictModal';
 import { FormulaEditorModal } from './components/FormulaEditorModal';
 import { CompanyEditorModal } from './components/CompanyEditorModal';
-import { TransitionWrapper } from './components/TransitionWrapper';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
-
-
-
-import { ConsultantReport } from './components/ConsultantReport';
 import { generateStage1Synthesis, generateStage2Synthesis, generateStage3Synthesis, SynthesisReport } from './services/synthesisService';
-import { StorageManager, STORAGE_KEYS, exportSessionData, importSessionData } from './lib/storage';
 import {
   useUIStore,
   useTheme,
@@ -732,162 +724,35 @@ export default function App() {
   // Views rendering
   const renderMainContent = () => {
     if (currentView === 'welcome' && companies.length === 0) {
-      return (
-        <TransitionWrapper id="welcome">
-          <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-[var(--color-bg-primary)] dark:bg-[#000000]">
-              <motion.div
-                  initial={{ scale: 0.8, opacity: 0, y: 20 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="w-32 h-32 mb-12 relative"
-              >
-                  <div className="absolute inset-0 bg-[#0071E3] rounded-[40px] rotate-6 opacity-10 animate-pulse" />
-                  <div className="absolute inset-0 bg-[#0071E3] rounded-[40px] -rotate-3 opacity-5" />
-                  <div className="relative w-full h-full bg-[#1D1D1F] dark:bg-[#111111] border border-white/5 rounded-[40px] flex items-center justify-center shadow-2xl shadow-[#1D1D1F]/20">
-                     <Brain className="text-white" size={48} strokeWidth={1.5} />
-                  </div>
-              </motion.div>
-              
-              <div className="space-y-6 max-w-[480px]">
-                <h1 className="text-[56px] font-display font-bold tracking-tight text-[#1D1D1F] dark:text-white leading-tight">Brand Matrix</h1>
-                <p className="text-[20px] text-[#86868B] dark:text-[#A1A1A6] font-medium leading-relaxed">
-                  The definitive workspace for architecting brand authority and segment-specific market strategies.
-                </p>
-                <div className="pt-8">
-                  <button 
-                    onClick={handleStartStage1} 
-                    className="btn-primary px-12 py-4 text-[17px] group"
-                  >
-                    Start Building
-                    <ChevronRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              </div>
-          </div>
-        </TransitionWrapper>
-      );
+      return <WelcomeView onStart={handleStartStage1} />;
     }
 
     if (currentView === 'returning') {
       return (
-        <TransitionWrapper id="returning">
-          <ReturningUserScreen 
-            companies={companies}
-            companyProgress={progress}
-            needsOfferUpdate={needsOfferUpdate}
-            offers={offers}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-            onSelectCompany={(id) => handleSelectCompany(id)}
-            onEditCompany={handleEditCompanyFromHome}
-            onDeleteCompany={handleDeleteCompany}
-            onAddNewCompany={handleStartStage1}
-            onDataImported={async () => {
-                const [savedCompanies, savedOffers, savedProgress] = await Promise.all([
-                  StorageManager.load(STORAGE_KEYS.COMPANIES, []),
-                  StorageManager.load(STORAGE_KEYS.OFFERS, {}),
-                  StorageManager.load(STORAGE_KEYS.PROGRESS, {})
-                ]);
-                setCompanies(savedCompanies);
-                setOffers(savedOffers);
-                setProgress(savedProgress);
-                setNeedsOfferUpdate(await StorageManager.load(STORAGE_KEYS.NEEDS_OFFER_UPDATE, {}));
-                showSuccessToastMsg("Intelligence Matrix Synchronized!");
-                setTimeout(() => dismissSuccess(), 3500);
-            }}
-          />
-        </TransitionWrapper>
+        <ReturningView
+          onSelectCompany={(id) => handleSelectCompany(id)}
+          onEditCompany={handleEditCompanyFromHome}
+          onDeleteCompany={handleDeleteCompany}
+          onAddNewCompany={handleStartStage1}
+        />
       );
     }
 
     if (currentView === 'stage4') {
-        const activeCompany = companies.find(c => c.id === activeCompanyId);
-        const currentOffer = activeCompanyId ? offers[activeCompanyId] : null;
-        const currentAvatars = activeCompanyId ? (progress[activeCompanyId]?.avatars || []) : [];
-
-        if (!activeCompany || !currentOffer) {
-            setCurrentView('returning');
-            return null;
-        }
-
-        return (
-            <TransitionWrapper id="stage4">
-                <StrategicScaling 
-                    company={activeCompany}
-                    offer={currentOffer}
-                    avatars={currentAvatars}
-                    onComplete={() => {
-                        showSuccessToastMsg("Strategic Blueprints Ready in Hub!");
-                        setTimeout(() => dismissSuccess(), 3500);
-                        setCurrentView('returning');
-                    }}
-                />
-            </TransitionWrapper>
-        );
+      return <Stage4View />;
     }
 
     return (
-      <>
-          <ModuleHeader 
-              moduleName={currentView === 'stage1' ? "Company Profile" : currentView === 'stage2' ? "Offer Builder" : "Empathy Architect"} 
-              company={activeCompany}
-              allCompanies={companies}
-              onSelectCompany={(id) => handleSelectCompany(id)}
-              onAddCompany={handleStartStage1}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-              onGoHome={() => {
-                endWizardSession();
-                setCurrentView('returning');
-              }}
-          />
-          
-          {activeCompany && (
-              <PhaseNav 
-                  currentView={currentView as any} 
-                  currentStep={stageStep}
-                  progress={progress[activeCompany.id]} 
-                  onNavigate={(view, phase) => {
-                      handleNavigateToStage(view as any, phase as any);
-                  }}
-              />
-          )}
-
-          <main className="flex-1 overflow-y-auto relative flex flex-col">
-              <AnimatePresence mode="wait">
-                {isSynthesizing ? (
-                  <TransitionWrapper id="synthesis" key="synthesis">
-                    <ConsultantReport 
-                      report={synthesisReport}
-                      isLoading={!synthesisReport}
-                      stageName={synthesisStage}
-                      onProceed={handleProceedAfterSynthesis}
-                      onBack={() => {
-                        resetSynthesis();
-                        // Stay on current stage to re-edit
-                      }}
-                    />
-                  </TransitionWrapper>
-                ) : (
-                  <TransitionWrapper id={`${currentView}-${stageStep}`} key={`${currentView}-${stageStep}`}>
-                    {currentView === 'stage1' && (
-                      <Stage1Routes
-                        onFinishStage1={handleFinishStage1}
-                        onStartStage1={handleStartStage1}
-                        onStartStage2={() => handleStartStage2()}
-                      />
-                    )}
-                    {currentView === 'stage2' && (
-                      <Stage2Routes onGenerateOffer={handleGenerateOffer} />
-                    )}
-                    {currentView === 'stage3' && (
-                      <Stage3Routes onCompleteAvatars={handleCompleteAvatars} />
-                    )}
-                  </TransitionWrapper>
-                )}
-              </AnimatePresence>
-          </main>
-      </>
+      <StageShell
+        onStartStage1={handleStartStage1}
+        onSelectCompany={handleSelectCompany}
+        onNavigateToStage={handleNavigateToStage}
+        onProceedAfterSynthesis={handleProceedAfterSynthesis}
+        onFinishStage1={handleFinishStage1}
+        onStartStage2={() => handleStartStage2()}
+        onGenerateOffer={handleGenerateOffer}
+        onCompleteAvatars={handleCompleteAvatars}
+      />
     );
   };
 
