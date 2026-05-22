@@ -24,7 +24,7 @@ import { TransitionWrapper } from './components/TransitionWrapper';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
 
-import { getOfferSteps } from './constants/offerSteps';
+
 
 import { ConsultantReport } from './components/ConsultantReport';
 import { generateStage1Synthesis, generateStage2Synthesis, generateStage3Synthesis, SynthesisReport } from './services/synthesisService';
