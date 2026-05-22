@@ -1,15 +1,32 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Company } from './types';
 import { WelcomeView } from './views/WelcomeView';
 import { ReturningView } from './views/ReturningView';
-import { Stage4View } from './views/Stage4View';
+import { SectionFallback } from './components/SectionFallback';
+// Stage 4 (final dashboard) is only reachable after completing the full
+// workflow — lazy-load to defer its bundle until then.
+const Stage4View = lazy(() =>
+  import('./views/Stage4View').then(m => ({ default: m.Stage4View }))
+);
 import { StageShell } from './views/StageShell';
-import { IntelligenceHub } from './components/IntelligenceHub';
+// Intelligence Hub is a heavy side panel that is closed by default and only
+// triggered by the floating action button on stages 1-3.
+const IntelligenceHub = lazy(() =>
+  import('./components/IntelligenceHub').then(m => ({ default: m.IntelligenceHub }))
+);
 import { Brain, Check, AlertCircle, X } from 'lucide-react';
 import { cn } from './lib/utils';
-import { ConflictModal } from './components/ConflictModal';
-import { FormulaEditorModal } from './components/FormulaEditorModal';
-import { CompanyEditorModal } from './components/CompanyEditorModal';
+// Modals are mounted in the tree but only render content when open. Lazy
+// loading keeps their (large) form/editor code out of the initial bundle.
+const ConflictModal = lazy(() =>
+  import('./components/ConflictModal').then(m => ({ default: m.ConflictModal }))
+);
+const FormulaEditorModal = lazy(() =>
+  import('./components/FormulaEditorModal').then(m => ({ default: m.FormulaEditorModal }))
+);
+const CompanyEditorModal = lazy(() =>
+  import('./components/CompanyEditorModal').then(m => ({ default: m.CompanyEditorModal }))
+);
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -134,7 +151,11 @@ export default function App() {
     }
 
     if (currentView === 'stage4') {
-      return <Stage4View />;
+      return (
+        <Suspense fallback={<SectionFallback label="Loading Results" />}>
+          <Stage4View />
+        </Suspense>
+      );
     }
 
     return (
@@ -157,19 +178,23 @@ export default function App() {
         "h-screen bg-[var(--color-primary-bg)] flex overflow-hidden matrix-grid transition-all duration-700",
         theme === 'dark' ? "dark" : ""
       )}>
-        {/* Intelligence Hub side panel */}
-        <IntelligenceHub
-          isOpen={isHubOpen}
-          onClose={() => closeHub()}
-          companies={companies}
-          offers={offers}
-          companyProgress={progress}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          onSelectCompany={(id) => handleSelectCompany(id)}
-          onConsolidateOffer={handleConsolidateOffer}
-          onUpdateAvatar={handleUpdateAvatar}
-        />
+        {/* Intelligence Hub side panel — only mount when opened to defer the chunk */}
+        {isHubOpen && (
+          <Suspense fallback={null}>
+            <IntelligenceHub
+              isOpen={isHubOpen}
+              onClose={() => closeHub()}
+              companies={companies}
+              offers={offers}
+              companyProgress={progress}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onSelectCompany={(id) => handleSelectCompany(id)}
+              onConsolidateOffer={handleConsolidateOffer}
+              onUpdateAvatar={handleUpdateAvatar}
+            />
+          </Suspense>
+        )}
 
         <div className="flex-1 flex flex-col min-w-0 relative">
           {/* Floating Intelligence Hub trigger */}
@@ -231,46 +256,59 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        <ConflictModal
-          isOpen={showConflictModal}
-          onClose={() => closeConflictModal()}
-          onOverwrite={() => {
-            if (pendingSaveType === 'company') saveCompany(false);
-            if (pendingSaveType === 'offer') handleGenerateOffer(true);
-          }}
-          onCreateNew={() => {
-            if (pendingSaveType === 'company') saveCompany(true);
-            if (pendingSaveType === 'offer') handleDuplicateProjectFromOffer();
-          }}
-          title={pendingSaveType === 'company' ? "Update Company Profile?" : "Update Offer Formula?"}
-          description={pendingSaveType === 'company' ? "You've changed your company details. Overwrite the original profile or save as a new project?" : "You've changed your offer formula. Do you want to update the current offer or create a new project for this version?"}
-        />
+        {/* Modals — only mount when open to defer their chunks */}
+        {showConflictModal && (
+          <Suspense fallback={null}>
+            <ConflictModal
+              isOpen={showConflictModal}
+              onClose={() => closeConflictModal()}
+              onOverwrite={() => {
+                if (pendingSaveType === 'company') saveCompany(false);
+                if (pendingSaveType === 'offer') handleGenerateOffer(true);
+              }}
+              onCreateNew={() => {
+                if (pendingSaveType === 'company') saveCompany(true);
+                if (pendingSaveType === 'offer') handleDuplicateProjectFromOffer();
+              }}
+              title={pendingSaveType === 'company' ? "Update Company Profile?" : "Update Offer Formula?"}
+              description={pendingSaveType === 'company' ? "You've changed your company details. Overwrite the original profile or save as a new project?" : "You've changed your offer formula. Do you want to update the current offer or create a new project for this version?"}
+            />
+          </Suspense>
+        )}
 
-        <FormulaEditorModal
-          isOpen={showFormulaModal}
-          onClose={() => {
-            closeFormulaModal();
-            setTransientResultOffer(null);
-          }}
-          draftOffer={draftOffer}
-          companyContext={activeCompany || undefined}
-          onUpdateDraft={(k, v) => setDraftOffer(prev => ({ ...prev, [k]: v }))}
-          onGenerate={() => { handleGenerateOffer(); }}
-          isGenerating={isGenerating}
-          resultOffer={transientResultOffer || undefined}
-        />
+        {showFormulaModal && (
+          <Suspense fallback={null}>
+            <FormulaEditorModal
+              isOpen={showFormulaModal}
+              onClose={() => {
+                closeFormulaModal();
+                setTransientResultOffer(null);
+              }}
+              draftOffer={draftOffer}
+              companyContext={activeCompany || undefined}
+              onUpdateDraft={(k, v) => setDraftOffer(prev => ({ ...prev, [k]: v }))}
+              onGenerate={() => { handleGenerateOffer(); }}
+              isGenerating={isGenerating}
+              resultOffer={transientResultOffer || undefined}
+            />
+          </Suspense>
+        )}
 
-        <CompanyEditorModal
-          isOpen={showCompanyModal}
-          onClose={() => closeCompanyModal()}
-          draftCompany={draftCompany}
-          isOfferComplete={activeCompanyId ? progress[activeCompanyId]?.stage2Complete : false}
-          onUpdateDraft={(k, v) => setDraftCompany(prev => ({ ...prev, [k]: v }))}
-          onSave={() => {
-            closeCompanyModal();
-            handleFinishStage1();
-          }}
-        />
+        {showCompanyModal && (
+          <Suspense fallback={null}>
+            <CompanyEditorModal
+              isOpen={showCompanyModal}
+              onClose={() => closeCompanyModal()}
+              draftCompany={draftCompany}
+              isOfferComplete={activeCompanyId ? progress[activeCompanyId]?.stage2Complete : false}
+              onUpdateDraft={(k, v) => setDraftCompany(prev => ({ ...prev, [k]: v }))}
+              onSave={() => {
+                closeCompanyModal();
+                handleFinishStage1();
+              }}
+            />
+          </Suspense>
+        )}
       </div>
     </ErrorBoundary>
   );
