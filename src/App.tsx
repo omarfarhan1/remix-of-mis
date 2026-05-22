@@ -434,8 +434,6 @@ export default function App() {
     );
   };
 
-  const [generationError, setGenerationError] = React.useState<string | null>(null);
-
   const handleGenerateOffer = async (forceOverwrite = false, overrideId?: string) => {
     const targetCompId = overrideId || activeCompanyId;
     const targetComp = companies.find(c => c.id === targetCompId);
