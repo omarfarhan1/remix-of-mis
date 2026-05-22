@@ -3,32 +3,24 @@ import { Company, Offer, Progress, Specialization, Avatar } from './types';
 import { Stage1Routes } from './views/Stage1Routes';
 import { Stage2Routes } from './views/Stage2Routes';
 import { Stage3Routes } from './views/Stage3Routes';
-import { ReturningUserScreen } from './components/ReturningUserScreen';
+import { WelcomeView } from './views/WelcomeView';
+import { ReturningView } from './views/ReturningView';
+import { Stage4View } from './views/Stage4View';
+import { StageShell } from './views/StageShell';
 import { IntelligenceHub } from './components/IntelligenceHub';
-import { Brain, ChevronRight, Check, AlertCircle, X } from 'lucide-react';
-import { ModuleHeader } from './components/ModuleHeader';
-import { PhaseNav } from './components/PhaseNav';
+import { Brain, Check, AlertCircle, X } from 'lucide-react';
 import { cn } from './lib/utils';
-import { StrategicScaling } from './components/stage4/StrategicScaling';
 import { generateAIContent } from './services/aiService';
 import { consolidateOffer, computeOfferScore } from './services/offerService';
-import { startOfferWizardSession, endWizardSession } from './services/offerWizardService';
+import { startOfferWizardSession } from './services/offerWizardService';
 import { addToEditHistory, updateIndustryIntelligence } from './services/historyService';
 import { generateScoreDelta, rankAvatarsForDisplay } from './services/intelligenceService';
-import { validateInputQuality } from './services/validationService';
-import { generateInitialAvatars } from './services/avatarService';
 import { ConflictModal } from './components/ConflictModal';
 import { FormulaEditorModal } from './components/FormulaEditorModal';
 import { CompanyEditorModal } from './components/CompanyEditorModal';
-import { TransitionWrapper } from './components/TransitionWrapper';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
-
-
-
-import { ConsultantReport } from './components/ConsultantReport';
 import { generateStage1Synthesis, generateStage2Synthesis, generateStage3Synthesis, SynthesisReport } from './services/synthesisService';
-import { StorageManager, STORAGE_KEYS, exportSessionData, importSessionData } from './lib/storage';
 import {
   useUIStore,
   useTheme,
