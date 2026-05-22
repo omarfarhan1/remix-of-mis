@@ -128,10 +128,14 @@ export function StageShell({
                 />
               )}
               {currentView === 'stage2' && (
-                <Stage2Routes onGenerateOffer={onGenerateOffer} />
+                <Suspense fallback={<SectionFallback label="Loading Offer Builder" />}>
+                  <Stage2Routes onGenerateOffer={onGenerateOffer} />
+                </Suspense>
               )}
               {currentView === 'stage3' && (
-                <Stage3Routes onCompleteAvatars={onCompleteAvatars} />
+                <Suspense fallback={<SectionFallback label="Loading Empathy Architect" />}>
+                  <Stage3Routes onCompleteAvatars={onCompleteAvatars} />
+                </Suspense>
               )}
             </TransitionWrapper>
           )}
