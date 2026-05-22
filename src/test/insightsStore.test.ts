@@ -20,12 +20,12 @@ describe('insightsStore', () => {
 
   it('setStageInsights updates state', () => {
     const insight: ActionableInsight = {
-      id: '1',
+      type: 'action',
+      title: 'Test',
+      observation: 'obs',
       action: 'Test action',
-      impact: 'high',
-      effort: 'low',
-      category: 'test',
-      rationale: 'rationale',
+      why: 'because',
+      urgency: 'anytime',
     };
     useInsightsStore.getState().setStageInsights({ 'c1-company': [insight] });
     expect(useInsightsStore.getState().stageInsights['c1-company']).toEqual([insight]);
@@ -33,21 +33,21 @@ describe('insightsStore', () => {
 
   it('setStageInsights accepts updater function', () => {
     const insight: ActionableInsight = {
-      id: '1',
-      action: 'A',
-      impact: 'high',
-      effort: 'low',
-      category: 'test',
-      rationale: 'rationale',
+      type: 'action',
+      title: 'A',
+      observation: 'obs',
+      action: 'Action A',
+      why: 'why',
+      urgency: 'anytime',
     };
     useInsightsStore.getState().setStageInsights({ 'c1-company': [insight] });
     const insight2: ActionableInsight = {
-      id: '2',
-      action: 'B',
-      impact: 'medium',
-      effort: 'medium',
-      category: 'test',
-      rationale: 'rationale',
+      type: 'opportunity',
+      title: 'B',
+      observation: 'obs',
+      action: 'Action B',
+      why: 'why',
+      urgency: 'before_next_stage',
     };
     useInsightsStore.getState().setStageInsights((prev) => ({
       ...prev,
@@ -68,12 +68,12 @@ describe('insightsStore', () => {
   it('loadStageInsights fetches and stores insights', async () => {
     const { generateStageInsights } = await import('../services/insightService');
     const mockInsight: ActionableInsight = {
-      id: 'i1',
+      type: 'action',
+      title: 'Do something',
+      observation: 'obs',
       action: 'Do something',
-      impact: 'high',
-      effort: 'low',
-      category: 'test',
-      rationale: 'rationale',
+      why: 'because',
+      urgency: 'anytime',
     };
     vi.mocked(generateStageInsights).mockResolvedValue([mockInsight]);
 
