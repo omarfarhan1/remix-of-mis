@@ -1,5 +1,5 @@
 import React from 'react';
-import { Company, Offer, Progress, Specialization, Avatar, ActionableInsight } from './types';
+import { Company, Offer, Progress, Specialization, Avatar } from './types';
 import { Step1Name } from './components/stage1/Step1Name';
 import { Step2Industry } from './components/stage1/Step2Industry';
 import { Step3Specialization } from './components/stage1/Step3Specialization';
@@ -77,6 +77,11 @@ import {
   useAvatarMethod,
   useWorkflowActions,
 } from './stores/workflowStore';
+import {
+  useStageInsights,
+  useIsInsightsLoading,
+  useInsightsActions,
+} from './stores/insightsStore';
 
 export default function App() {
   // UI State (theme, modals, toasts, hub) lives in uiStore.
@@ -167,24 +172,10 @@ export default function App() {
     initStorage();
   }, []);
 
-  const [stageInsights, setStageInsights] = React.useState<Record<string, ActionableInsight[]>>({});
-  const [isInsightsLoading, setIsInsightsLoading] = React.useState(false);
-
-  const loadStageInsights = async (stage: any, data: any, company: Company) => {
-    setIsInsightsLoading(true);
-    try {
-      const { generateStageInsights } = await import('./services/insightService');
-      const insights = await generateStageInsights(stage, data, company);
-      setStageInsights(prev => ({
-        ...prev,
-        [`${company.id}-${stage}`]: insights
-      }));
-    } catch (err) {
-      console.error("Insights load failed", err);
-    } finally {
-      setIsInsightsLoading(false);
-    }
-  };
+  // Insights domain — stageInsights + isInsightsLoading in insightsStore (Step 9).
+  const stageInsights = useStageInsights();
+  const isInsightsLoading = useIsInsightsLoading();
+  const { loadStageInsights } = useInsightsActions();
 
   // Actions
   const handleSelectCompany = (id: string, phase?: 'company' | 'offer' | 'avatar') => {
