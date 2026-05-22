@@ -172,24 +172,10 @@ export default function App() {
     initStorage();
   }, []);
 
-  const [stageInsights, setStageInsights] = React.useState<Record<string, ActionableInsight[]>>({});
-  const [isInsightsLoading, setIsInsightsLoading] = React.useState(false);
-
-  const loadStageInsights = async (stage: any, data: any, company: Company) => {
-    setIsInsightsLoading(true);
-    try {
-      const { generateStageInsights } = await import('./services/insightService');
-      const insights = await generateStageInsights(stage, data, company);
-      setStageInsights(prev => ({
-        ...prev,
-        [`${company.id}-${stage}`]: insights
-      }));
-    } catch (err) {
-      console.error("Insights load failed", err);
-    } finally {
-      setIsInsightsLoading(false);
-    }
-  };
+  // Insights domain — stageInsights + isInsightsLoading in insightsStore (Step 9).
+  const stageInsights = useStageInsights();
+  const isInsightsLoading = useIsInsightsLoading();
+  const { loadStageInsights } = useInsightsActions();
 
   // Actions
   const handleSelectCompany = (id: string, phase?: 'company' | 'offer' | 'avatar') => {
