@@ -1,13 +1,21 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { Avatar } from '../types';
 import { ModuleHeader } from '../components/ModuleHeader';
 import { PhaseNav } from '../components/PhaseNav';
 import { TransitionWrapper } from '../components/TransitionWrapper';
 import { ConsultantReport } from '../components/ConsultantReport';
+import { SectionFallback } from '../components/SectionFallback';
 import { Stage1Routes } from './Stage1Routes';
-import { Stage2Routes } from './Stage2Routes';
-import { Stage3Routes } from './Stage3Routes';
+// Stage 2 and Stage 3 are gated behind explicit user progression — lazy load
+// to keep them out of the initial bundle. Stage 1 stays eager because it is
+// reachable on first interaction from the Welcome view.
+const Stage2Routes = lazy(() =>
+  import('./Stage2Routes').then(m => ({ default: m.Stage2Routes }))
+);
+const Stage3Routes = lazy(() =>
+  import('./Stage3Routes').then(m => ({ default: m.Stage3Routes }))
+);
 import { endWizardSession } from '../services/offerWizardService';
 import { useCompanies, useActiveCompanyId } from '../stores/companyStore';
 import { useProgress } from '../stores/offerStore';
