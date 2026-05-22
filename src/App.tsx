@@ -77,6 +77,11 @@ import {
   useAvatarMethod,
   useWorkflowActions,
 } from './stores/workflowStore';
+import {
+  useStageInsights,
+  useIsInsightsLoading,
+  useInsightsActions,
+} from './stores/insightsStore';
 
 export default function App() {
   // UI State (theme, modals, toasts, hub) lives in uiStore.
