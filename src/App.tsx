@@ -1,15 +1,32 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Company } from './types';
 import { WelcomeView } from './views/WelcomeView';
 import { ReturningView } from './views/ReturningView';
-import { Stage4View } from './views/Stage4View';
+import { SectionFallback } from './components/SectionFallback';
+// Stage 4 (final dashboard) is only reachable after completing the full
+// workflow — lazy-load to defer its bundle until then.
+const Stage4View = lazy(() =>
+  import('./views/Stage4View').then(m => ({ default: m.Stage4View }))
+);
 import { StageShell } from './views/StageShell';
-import { IntelligenceHub } from './components/IntelligenceHub';
+// Intelligence Hub is a heavy side panel that is closed by default and only
+// triggered by the floating action button on stages 1-3.
+const IntelligenceHub = lazy(() =>
+  import('./components/IntelligenceHub').then(m => ({ default: m.IntelligenceHub }))
+);
 import { Brain, Check, AlertCircle, X } from 'lucide-react';
 import { cn } from './lib/utils';
-import { ConflictModal } from './components/ConflictModal';
-import { FormulaEditorModal } from './components/FormulaEditorModal';
-import { CompanyEditorModal } from './components/CompanyEditorModal';
+// Modals are mounted in the tree but only render content when open. Lazy
+// loading keeps their (large) form/editor code out of the initial bundle.
+const ConflictModal = lazy(() =>
+  import('./components/ConflictModal').then(m => ({ default: m.ConflictModal }))
+);
+const FormulaEditorModal = lazy(() =>
+  import('./components/FormulaEditorModal').then(m => ({ default: m.FormulaEditorModal }))
+);
+const CompanyEditorModal = lazy(() =>
+  import('./components/CompanyEditorModal').then(m => ({ default: m.CompanyEditorModal }))
+);
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
 import {
