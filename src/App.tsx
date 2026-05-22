@@ -1,5 +1,5 @@
 import React from 'react';
-import { Company, Offer, Progress, Specialization, Avatar, ActionableInsight } from './types';
+import { Company, Offer, Progress, Specialization, Avatar } from './types';
 import { Step1Name } from './components/stage1/Step1Name';
 import { Step2Industry } from './components/stage1/Step2Industry';
 import { Step3Specialization } from './components/stage1/Step3Specialization';
